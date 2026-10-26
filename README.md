@@ -1,89 +1,93 @@
-# Exercice technique — développeur·se front-end / UI (React / TypeScript)
+# Métiers 360 — Préparer une séance
 
-## Le cadre
+Application de préparation de séances de vidéos immersives 360° pour les conseiller·es
+France Travail, enseignant·es et éducateur·ices. Elle permet de chercher des vidéos dans
+le catalogue, de composer une séance (sélection, ordre, nom, casque), puis de l'enregistrer. En plus elle permet de lister les séances déjà enregistré et voir leur détail.
 
-- **Effort : une demi-journée de votre attention, pas plus.** Le temps où un agent travaille seul ne
-  compte pas ; comptez celui que vous passez à lire, cadrer, guider, relire et tester. Nous ne cherchons
-  pas un rendu exhaustif. S'arrêter à temps et expliquer ce qui manque fait partie de l'exercice.
-- **Délai de rendu : 7 jours** après réception du sujet, à organiser comme vous le souhaitez.
-- **La spécification est volontairement incomplète.** C'est notre quotidien : le besoin arrive rarement
-  sous une forme définitive. Vous pouvez nous poser des questions par mail à tout moment
-  (réponse sous une demi-journée ouvrée ; pour les questions posées les 22 et 23 octobre, réponse le
-  lundi 26). Vous pouvez aussi trancher vous-même : notez alors l'hypothèse prise.
-- **Les assistants IA sont autorisés**, et même bienvenus : c'est notre façon de travailler. Dites-nous
-  simplement comment vous les avez utilisés et ce que vous avez vérifié par vous-même.
-- Ce code ne sera jamais utilisé en production. Il sert uniquement de support au débrief.
+## Lancer le projet
 
-## Le contexte
+```bash
+# 1. Démarrer l'API simulée (fournie, port 4000)
+cd server && npm && npm start
 
-Métiers 360 propose un catalogue de vidéos immersives 360° qui présentent des métiers de l'intérieur.
-Chaque vidéo est rattachée à un ou plusieurs métiers du **référentiel ROME 4.0** de France Travail
-(code, intitulé, grand domaine).
+# 2. Démarrer l'application (port 5173)
+cd app && npm install && npm run dev
+```
 
-Les vidéos sont utilisées par des **conseiller·es France Travail, des enseignant·es, des
-éducateur·ices**. Avant une séance avec un groupe, ils et elles choisissent les vidéos à faire
-découvrir, puis les envoient sur les casques de réalité virtuelle. Ils sont souvent pressés, pas
-toujours à l'aise avec le numérique, et préparent parfois la séance quelques minutes avant, sur
-une tablette, devant le groupe.
+Ouvrir http://localhost:5173
 
-## Ce que nous vous fournissons
+## Mise en place du projet
 
-Une archive de démarrage, à versionner vous-même dès le début, contenant :
+Le dépôt contient deux parties :
 
-- un **serveur d'API simulé** (catalogue d'environ 200 vidéos, métiers ROME, modèles de casques) et
-  sa documentation ;
-- les données de chaque vidéo : titre, description, métiers ROME associés, durée, public conseillé,
-  vignette, compatibilité avec les modèles de casques.
+- **`server`** : le serveur d'API simulé fourni, tel quel, sans changement.
+- **`app`** : l'application front-end, bootstrap avec `npm create vite@latest -- --template react-ts`,
+  puis adaptée au sujet.
 
-Le serveur simulé se comporte comme une vraie API : temps de réponse variables et erreurs
-occasionnelles.
+### Choix technologiques
 
-## Ce que nous vous demandons
+| Techno | Rôle | Pourquoi |
+|---|---|---|
+| **React 18 + TypeScript strict** | Base | Exigé. |
+| **Vite 8** | Bundler / dev server | Exigé. |
+| **React Router 7** | Routage | Trois routes : catalogue, liste des séances, détail d'une séance. |
+| **TanStack Query v5** | Données serveur | TanStack Query gère cache, retry, loading/error states nativement. |
+| **Ant Design 5** | Composants + style | Cité comme utilisé en interne. Composants accessibles (Drawer, Select, AutoComplete, Pagination...) prêts à l'emploi. |
+| **React Context + useState** | État du brouillon | Un seul état global (la séance en cours de composition). Pas de dépendance supplémentaire (Redux,...) |
 
-Une petite application qui permet de **préparer une séance** :
+## Les trois hypothèses qui ont le plus pesé
 
-1. **Trouver des vidéos** dans le catalogue (recherche et filtres que vous jugez utiles pour ce public).
-2. **Composer la séance** : sélectionner des vidéos, les ordonner, la nommer.
-3. **Enregistrer la séance** via l'API.
+1. **Persistance locale du brouillon.** La spécification ne dit pas si une séance en
+   cours de composition doit survivre à un rafraîchissement. Le brouillon est donc persisté dans `localStorage`.
+2. **Pas d'édition/suppression des séances enregistrées.** L'API n'expose que
+   `GET` et `POST /sessions` (ni `PUT` ni `DELETE`). J'en déduis qu'une séance
+   enregistrée est définitive ; la vue « Mes séances » est en lecture seule.
+3. **Le filtre « casque » sert aussi de filtre de compatibilité.** Un casque choisi
+   filtre les vidéos à celles qui le supportent — usage : « je n'ai que des Pico 4
+   aujourd'hui, ne me montrez que ce que je peux lancer ».
 
-Stack attendue : **React 18 et TypeScript en mode strict, avec Vite.** Le routage, la bibliothèque de
-composants, la gestion d'état et le style sont à votre choix, à condition de l'argumenter. Pour
-information, nos applications utilisent Ant Design et Tailwind selon les projets.
+## Choix d'interface, et pour qui
 
-Si vous connaissez **Remix** (notre application utilisateur est en Remix 2) ou React Router 7, vous
-pouvez l'utiliser : c'est un plus, pas une attente.
+- **Catalogue et composition sur le même écran**, le panneau de séance s'ouvrant en
+  tiroir latéral. Pour des utilisateur·ices pressé·es qui préparent juste avant la
+  séance : on ne change pas de page pour ajouter/ordonner.
+- **Filtres alignés sur l'usage** : titre, métier (ROME, recherche par nom), public
+  (le groupe est connu), casque (matériel disponible). Pas de filtre « durée » : peu
+  utile au moment de choisir.
+- **États d'interface explicites** (spinner de chargement, liste vide, erreur avec
+  réessayer) car l'API simulée peut échouer.
+- **Reponsive** : grille responsive (`Row`/`Col` avec breakpoints
+AntD), tiroir prenant toute la largeur en portrait.
 
-Nous attacherons de l'importance :
+## Ce qui a été laissé de côté
 
-- aux **choix d'interface**, justifiés par l'usage plutôt que par le goût ;
-- à l'**accessibilité** (navigation au clavier, focus, contrastes, lecteurs d'écran : référentiels
-  WCAG / RGAA) ;
-- aux **états de l'interface** : chargement, liste vide, erreur ;
-- au rendu sur **tablette** autant que sur ordinateur.
+- Édition/suppression de séances (non couvert par l'API).
+- Authentification et persistance serveur au-delà de la mémoire (hors périmètre).
 
-Aucune maquette n'est fournie : c'est à vous de proposer. Un croquis ou une capture Figma dans le
-README est bienvenu, sans obligation.
+## Avec plus de temps
 
-## À rendre
+- **Tests automatisés** (Vitest + Testing Library) sur le brouillon, le flux de
+  sauvegarde et les états d'erreur.
+- **Réordonnancement en drag and drop** (accessible) en plus des boutons haut/bas.
+- **Prévisualisation d'une vidéo** avant de l'ajouter à la séance.
+- **Thème sombre** et raffinement des contrastes (audit RGAA complet).
+- **Recherche plein-texte** sur la description des vidéos, pas seulement le titre
+  (l'API ne supporte `q` que sur le titre — il faudrait filtrer côté client sur la
+  page courante, ou demander une évolution de l'API).
+- **InternationalisationU** de l'application avec `react-i18next`, pour basculer entre le français et l'anglais (ou d'autres langues) sans réécrire les composants — l'API et le référentiel ROME étant en français, seuls les textes de l'interface seraient concernés.
 
-- Un lien vers un dépôt Git (GitLab, GitHub) ou une archive, avec l'historique des commits.
-- Un `README` qui remplace celui de l'archive (une copie de ce sujet). Nous le lisons avant le débrief
-  pour préparer nos questions : écrivez-le pour quelqu'un qui le découvre et dispose de cinq minutes.
-  La place est volontairement limitée, à vous de choisir ce qui mérite d'y figurer :
-  - comment lancer le projet (les commandes, sans commentaire) ;
-  - les **trois** hypothèses qui ont le plus pesé, là où la spécification était muette ;
-  - vos **deux ou trois** principaux choix d'interface, et pour qui ils sont faits ;
-  - ce que vous avez volontairement laissé de côté, et pourquoi ;
-  - ce que vous feriez avec une journée de plus ;
-  - comment vous avez utilisé l'IA : ce que vous avez délégué, ce que vous avez vérifié vous-même, et
-    **une** décision prise contre une proposition de l'outil, la plus marquante ;
-  - le temps d'attention que vous y avez consacré, et en combien de sessions.
-- Si vous avez écrit des fichiers de contexte, des spécifications ou des consignes pour un agent IA
-  (`CLAUDE.md`, `AGENTS.md`, prompts…), vous pouvez les joindre. C'est facultatif.
+## Utilisation de l'IA
 
-## La suite
+J'ai utilisé un assistant IA pour le bootstrapping initial, l'écriture des types et une première version des composants, tout en pilotant l'architecture (séparation `lib` / `components`, store en `Context`, hooks `TanStack Query`).
+J'ai ensuite repris, ajusté et simplifié le code à la main. J'ai vérifié moi-même : le build réussit, et la chaîne complète fonctionne contre l'API réelle (GET vidéos, GET filtres, POST /sessions → 201, GET sessions) y compris la gestion des échecs transitoires.
 
-Un débrief d'une heure en visio : vous nous présentez vos choix, puis nous faisons évoluer le besoin
-ensemble, en direct, sur votre code. Pas de piège : nous voulons voir comment vous raisonnez sur
-un sujet que vous connaissez déjà bien. Pendant cette partie, vous pouvez utiliser vos outils
-habituels, assistants IA compris, en partageant votre écran.
+**Décision prise contre une proposition de l'outil** : l'assistant a proposé d'abord un
+store Zustand pour le brouillon, puis un store maison basé sur `useSyncExternalStore`.
+J'ai tranché pour un simple React Context + `useState` — moins de code, pas de
+dépendance, suffisant pour un seul état global. Lors d'une deuxième itération,
+l'assistant a également proposé de combiner Ant Design avec Tailwind ; j'ai retiré
+Tailwind pour garder un seul système de style.
+
+## Temps et sessions
+
+Une seule session d'environ 2 h, répartie entre la revue du code produit par l'IA et la modification des composants (retrait de `Tailwind`, passage de useReducer à useState, extraction de composants partagés, rajout des routes session et détail, fixes de types et vérification bout-en-bout).
